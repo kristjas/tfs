@@ -33,12 +33,12 @@ export default {
   components: { FlatPickr },
   data() {
     return {
-      selectedDate: null, // Selected date
-      selectedSlot: null, // Selected time slot
-      timeSlots: [], // Slots for the selected date
+      selectedDate: null, 
+      selectedSlot: null, 
+      timeSlots: [], 
       dateConfig: {
-        enableTime: false, // Date only
-        dateFormat: "Y-m-d", // Date format
+        enableTime: false,  
+        dateFormat: "Y-m-d", 
       },
     };
   },
@@ -51,13 +51,13 @@ export default {
   },
   methods: {
     fetchSlotsForDate(date) {
-        // Fetch slots from the backend for the selected date
+       
         fetch(`http://localhost:3000/api/timeslots?date=${date}`)
             .then((response) => response.json())
             .then((data) => {
                 this.timeSlots = data.map((slot) => ({
-                    time: slot.time_slot, // Time slot (e.g., "9:00 - 10:00")
-                    status: slot.is_booked ? 'booked' : 'available', // "available" or "booked"
+                    time: slot.time_slot, 
+                    status: slot.is_booked ? 'booked' : 'available', 
                 }));
             })
             .catch((err) => console.error("Error fetching slots:", err));
@@ -68,10 +68,10 @@ export default {
             return;
         }
         
-        // Mark the slot as booked locally
+        
         slot.status = 'booked';
 
-        // Send the booking to the backend
+        
         fetch("http://localhost:3000/api/bookings", {
             method: "POST",
             headers: {
@@ -90,7 +90,7 @@ export default {
             })
             .catch((err) => {
                 console.error("Error booking slot:", err);
-                // Revert to available if booking fails
+               
                 slot.status = 'available';
             });
     },
@@ -99,7 +99,7 @@ export default {
   watch: {
     selectedDate(newDate) {
       if (newDate) {
-        this.fetchSlotsForDate(newDate); // Fetch time slots for the selected date
+        this.fetchSlotsForDate(newDate); 
       } else {
         this.timeSlots = [];
       }
