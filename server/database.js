@@ -3,17 +3,17 @@ const { Pool } = require('pg');
 // Configure the database connection
 const pool = new Pool({
     user: "postgres",
-    password: "", // Replace with your database password
-    database: "testWad",    // Replace with your database name
+    password: "", 
+    database: "testWad",    
     host: "localhost",
     port: "5433"
 });
 
 const execute = async (createTblQuery, insertDataQuery) => {
     try {
-        await pool.connect(); // Establish connection
-        await pool.query(createTblQuery); // Create the table if it doesn't exist
-        await pool.query(insertDataQuery); // Insert default time slots if not already present
+        await pool.connect(); 
+        await pool.query(createTblQuery); 
+        await pool.query(insertDataQuery); 
         console.log('Table setup and default slots insertion complete.');
         return true;
     } catch (error) {
@@ -22,7 +22,7 @@ const execute = async (createTblQuery, insertDataQuery) => {
     }
 };
 
-// SQL query to create the "time_slots" table
+
 const createTblQuery = `
     CREATE TABLE IF NOT EXISTS "time_slots" (
         "id" SERIAL PRIMARY KEY,
@@ -32,7 +32,7 @@ const createTblQuery = `
     );
 `;
 
-// SQL query to insert default time slots for a range of dates and times
+
 const insertDataQuery = `
     DO $$
     BEGIN
@@ -48,7 +48,6 @@ const insertDataQuery = `
     END $$;
 `;
 
-// Execute the queries to set up the table and populate it with default data
 execute(createTblQuery, insertDataQuery).then(result => {
     if (result) {
         console.log('Time slots table is ready and default slots have been added.');
@@ -57,5 +56,5 @@ execute(createTblQuery, insertDataQuery).then(result => {
     console.error('Failed to set up time slots table:', err);
 });
 
-// Export the pool for use in other parts of the application
+
 module.exports = pool;
