@@ -8,25 +8,24 @@ const app = express();
 app.use(cors({ origin: 'http://localhost:8080', credentials: true }));
 app.use(express.json());
 
-// Endpoint to fetch time slots for a specific date
 app.get('/api/timeslots', async (req, res) => {
     try {
-        const { date } = req.query; // Get the date from the query parameters
+        const { date } = req.query; 
         const timeSlots = await pool.query(
             "SELECT * FROM time_slots WHERE date = $1 ORDER BY time_slot",
             [date]
         );
-        res.json(timeSlots.rows); // Return the time slots for the selected date
+        res.json(timeSlots.rows); 
     } catch (err) {
         console.error('Error fetching time slots:', err);
         res.status(500).send('Server error');
     }
 });
 
-// Endpoint to book a time slot
+
 app.post('/api/bookings', async (req, res) => {
     try {
-        const { date, time } = req.body; // Get the date and time from the request body
+        const { date, time } = req.body; 
 
         // Check if the slot is already booked
         const slot = await pool.query(
@@ -42,7 +41,7 @@ app.post('/api/bookings', async (req, res) => {
             return res.status(400).send('This slot is already booked');
         }
 
-        // Update the slot status to 'booked'
+       
         await pool.query(
             "UPDATE time_slots SET is_booked = true WHERE date = $1 AND time_slot = $2",
             [date, time]
@@ -55,13 +54,13 @@ app.post('/api/bookings', async (req, res) => {
     }
 });
 
-// Add this to your existing server code (in the backend)
+
 
 app.post('/api/timeslots', async (req, res) => {
     try {
-        const { date, time } = req.body; // Get the date and time from the request body
+        const { date, time } = req.body; 
 
-        // Check if the slot already exists
+     
         const existingSlot = await pool.query(
             "SELECT * FROM time_slots WHERE date = $1 AND time_slot = $2",
             [date, time]
@@ -71,7 +70,6 @@ app.post('/api/timeslots', async (req, res) => {
             return res.status(400).send('Time slot already exists.');
         }
 
-        // Insert the new time slot into the database
         await pool.query(
             "INSERT INTO time_slots (date, time_slot, is_booked) VALUES ($1, $2, false)",
             [date, time]
