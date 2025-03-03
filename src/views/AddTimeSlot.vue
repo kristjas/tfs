@@ -2,7 +2,6 @@
     <div>
       <h2>Add New Time Slot</h2>
   
-      <!-- Date Picker (FlatPickr) -->
       <div>
         <label for="date">Select Date:</label>
         <flat-pickr
@@ -13,7 +12,7 @@
         />
       </div>
   
-      <!-- Time Picker (Native HTML time input) -->
+      
       <div>
         <label for="time">Select Time:</label>
         <input
@@ -25,52 +24,52 @@
         />
       </div>
   
-      <!-- Button to Add Time Slot -->
+      
       <button @click="addTimeSlot" :disabled="!newDate || !newTime">Add Slot</button>
   
-      <!-- Success/Failure Message -->
+      
       <p v-if="message">{{ message }}</p>
     </div>
   </template>
   
   <script>
-  // Import FlatPickr and its CSS
+  
   import FlatPickr from "vue-flatpickr-component";
   import "flatpickr/dist/flatpickr.css";
   
   export default {
     components: {
-      FlatPickr, // Register FlatPickr component
+      FlatPickr, 
     },
     data() {
       return {
-        newDate: null, // Selected date for new time slot
-        newTime: null, // Selected time for new time slot
-        message: "", // Message for success or failure
+        newDate: null, 
+        newTime: null, 
+        message: "", 
         dateConfig: {
-          enableTime: false, // Date only (no time)
-          dateFormat: "Y-m-d", // Date format: "Year-Month-Day"
+          enableTime: false, 
+          dateFormat: "Y-m-d", 
         },
       };
     },
     methods: {
         addTimeSlot() {
-    // Ensure both date and time are selected
+    
     if (!this.newDate || !this.newTime) {
         this.message = "Please select both date and time.";
         return;
     }
 
-    // Convert time to include seconds (e.g., "10:30" -> "10:30:00")
+    
     const formattedTime = `${this.newTime}:00`;
 
-    // Prepare the data to send to the backend
+    
     const timeSlot = {
-        date: this.newDate, // This is already in "YYYY-MM-DD" format
-        time: formattedTime, // Now the time is in "HH:MM:SS" format
+        date: this.newDate, 
+        time: formattedTime, 
     };
 
-    // Send the POST request to the backend API
+    
     fetch("http://localhost:3000/api/timeslots", {
         method: "POST",
         headers: {
@@ -82,7 +81,7 @@
         .then((data) => {
             this.message = `Time slot for ${this.newDate} at ${this.newTime} added successfully.`;
             this.newDate = null;
-            this.newTime = null; // Reset form after submission
+            this.newTime = null; 
         })
         .catch((err) => {
             this.message = "Error adding time slot.";
