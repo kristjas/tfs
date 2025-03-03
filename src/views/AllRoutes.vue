@@ -1,4 +1,14 @@
 <template>
+
+  <div>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <router-link to="/" class="nav-link">Home</router-link>
+      <router-link to="/routemanagement" class="nav-link">Route Management</router-link>
+      <router-link to="/test" class="nav-link">Test</router-link>
+    </nav>
+
+  </div>
   <div>
 <h3> All sdsdsdoute  </h3>
 

@@ -1,160 +1,150 @@
 <template>
   <div>
-  <h1>Routes Management Pannel</h1>
-  <div class="container">
-          <table>
-          <thead>
-          <tr>
-            <th>From</th>
-            <th>To</th>
-            <th>Cost</th>
-            <th>Time</th>
-            <th>Date</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr class="item" v-for="route in routes" :key="route.id">
-            <td><input name="fromcity" type="text" id="fromcity" required v-model="route.fromcity"></td>
-            <td><input name="tocity" type="text" id="tocity" required v-model="route.tocity"></td>
-            <td><input name="cost" type="text" id="cost" required v-model="route.cost"></td>
-            <td><input name="time" type="text" id="time" required v-model="route.departuretime"></td>
-            <td><input name="date" type="text" id="date" required v-model="route.departuredate"></td>
-            <td><button class="update"  @click="updateRoute(route.id, route)">update</button> </td> 
-            <td><button class="delete"  @click="deleteRoute(route.id)">delete</button> </td> 
-          </tr>
-          </tbody>
-          </table>
+    <h2>Select Date</h2>
+    <flat-pickr 
+      v-model="selectedDate" 
+      :config="dateConfig"
+      class="date-picker"
+    />
+    <p>Selected Date: {{ selectedDate }}</p>
+
+    <h2>Available Time Slots</h2>
+    <div v-if="timeSlots.length > 0" class="slots">
+      <div 
+        v-for="(slot, index) in timeSlots" 
+        :key="index" 
+        :class="['slot', { booked: slot.status === 'booked', selected: selectedSlot === slot }]" 
+        @click="bookSlot(slot)"
+      >
+        {{ slot.time }}
+      </div>
     </div>
-    
-    <h3>Add a Route</h3> 
-    <div class="container">
-    <table>
-      <tbody>
-        <tr> 
-            <td><input name="fromcity" type="text" id="fromcityAdd" placeholder="From" required v-model="ARoute.fromcity"></td>
-            <td><input name="tocity" type="text" id="tocityAdd" placeholder="To" required v-model="ARoute.tocity"></td>
-            <td><input name="cost" type="number" id="costAdd" placeholder="Cost" required v-model="ARoute.cost"></td>
-            <td><input name="time" type="text" id="timeAdd" placeholder="Departure time" required v-model="ARoute.departuretime"></td>
-            <td><input name="date" type="text" id="dateAdd"   required v-model="ARoute.departuredate"></td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
-    <button class="add"  @click="addRoute(ARoute)"> Add  </button>
+    <p v-else>Please select a date to see available time slots.</p>
+
+    <h3>Selected Date and Time: {{ selectedDateTime }}</h3>
   </div>
 </template>
 
-
 <script>
+import FlatPickr from "vue-flatpickr-component";
+import "flatpickr/dist/flatpickr.css";
+
 export default {
-  name: "RoutesManagement",
+  components: { FlatPickr },
   data() {
     return {
-      ARoute: {
-        fromcity: "",
-        tocity: "",
-        cost: "",
-        departuretime: "",
-        departuredate: "",
+      selectedDate: null, // Selected date
+      selectedSlot: null, // Selected time slot
+      timeSlots: [], // Slots for the selected date
+      dateConfig: {
+        enableTime: false, // Date only
+        dateFormat: "Y-m-d", // Date format
       },
-      routes: [],
     };
   },
+  computed: {
+    selectedDateTime() {
+      return this.selectedDate && this.selectedSlot
+        ? `${this.selectedDate} ${this.selectedSlot.time}`
+        : "Not selected yet.";
+    },
+  },
   methods: {
-    fetchRouts() {
-      fetch(`http://localhost:3000/api/routes/`)
-        .then((response) => response.json())
-        .then((data) => (this.routes = data))
-        .catch((err) => console.log(err.message));
-  },
-    addRoute(route) {
-      fetch(`http://localhost:3000/api/routes`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(route),
-        })
-        .then((response) => {
-          //console.log("response.data" + response.data);
-          this.$router.push("/");
-        })
-        .catch((e) => {
-          console.log(e);
-        });
-    },
-    updateRoute(id, route) {
-      fetch(`http://localhost:3000/api/routes/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify( {"id": id, "fromcity": route.fromcity, "tocity": route.tocity, "cost": route.cost, "departuretime": route.departuretime, "departuredate": route.departuredate}),
+    fetchSlotsForDate(date) {
+        // Fetch slots from the backend for the selected date
+        fetch(`http://localhost:3000/api/timeslots?date=${date}`)
+            .then((response) => response.json())
+            .then((data) => {
+                this.timeSlots = data.map((slot) => ({
+                    time: slot.time_slot, // Time slot (e.g., "9:00 - 10:00")
+                    status: slot.is_booked ? 'booked' : 'available', // "available" or "booked"
+                }));
             })
-        .then((response) => {
-          //console.log("response.data" + response.data);
-          this.$router.push("/");
-        })
-        .catch((e) => {
-          console.log(e);
-        });
+            .catch((err) => console.error("Error fetching slots:", err));
     },
-    deleteRoute(id) {
-      fetch(`http://localhost:3000/api/routes/${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      })
-        .then((response) => {
-          //console.log(response.data);
-          this.$router.push("/routemanagement'");
+    bookSlot(slot) {
+        if (slot.status === 'booked') {
+            alert("This slot is already booked.");
+            return;
+        }
+        
+        // Mark the slot as booked locally
+        slot.status = 'booked';
+
+        // Send the booking to the backend
+        fetch("http://localhost:3000/api/bookings", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                date: this.selectedDate,
+                time: slot.time,
+            }),
         })
-        .catch((e) => {
-          console.log(e);
-        });
-    }, 
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Failed to book slot.");
+                }
+                alert(`Slot booked for ${this.selectedDate} at ${slot.time}`);
+            })
+            .catch((err) => {
+                console.error("Error booking slot:", err);
+                // Revert to available if booking fails
+                slot.status = 'available';
+            });
+    },
+},
+
+  watch: {
+    selectedDate(newDate) {
+      if (newDate) {
+        this.fetchSlotsForDate(newDate); // Fetch time slots for the selected date
+      } else {
+        this.timeSlots = [];
+      }
+    },
   },
-  mounted() {
-    this.fetchRouts();
-    console.log("mounted");
-  } 
 };
 </script>
 
 <style scoped>
-h1 {
-  font-size: 20px;
+h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
 }
-.container {
-  background: #d5d7d8;
-  box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.2);
-  margin-bottom: 30px;
-  margin-top: 30px;
-  padding: 10px 20px;
-  margin: auto;
-  width: 80%;
-  border-radius: 20px;
-  display: flex;
-  justify-content: center;
-  
+.date-picker {
+  width: 300px;
+  padding: 10px;
+  font-size: 16px;
+  margin-bottom: 20px;
 }
-input{
-  width: 100px;
-  text-align: center
+.slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
 }
-.delete{
-    background: red;
-}
-.update{
-    background: blue;
-}
-.add{
-  background: rgb(8, 110, 110);
-  border: 0;
-  padding: 10px 20px;
-  margin-top: 20px;
-  color: white;
-  border-radius: 20px;
-  align-items: center;
+.slot {
+  padding: 10px;
+  border: 1px solid #ccc;
   text-align: center;
+  cursor: pointer;
+  background-color: #f9f9f9;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+.slot:hover {
+  background-color: #e6e6e6;
+}
+.slot.booked {
+  background-color: #f44336;
+  color: white;
+  cursor: not-allowed;
+}
+.slot.selected {
+  background-color: #4caf50;
+  color: white;
+  font-weight: bold;
 }
 </style>

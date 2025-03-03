@@ -2,8 +2,9 @@
   <div>
 
     <nav>
-      <router-link to="/">Routs</router-link> |
-      <router-link to="/routemanagement"> Routes Management</router-link> 
+      <router-link to="/">Avaleht</router-link> |
+      <router-link to="/routemanagement"> Broneeri aeg</router-link> 
+      <router-link to="/add-slot"> Lisa aeg</router-link> 
     </nav>
     <router-view />
   
@@ -24,9 +25,12 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
+  background-color: bisque;
 }
 nav {
-  padding: 30px;
+  display: flex;
+  justify-content: flex-end; 
+  align-items: center;
 }
 nav a {
   font-weight: bold;

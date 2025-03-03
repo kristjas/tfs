@@ -1,136 +1,89 @@
 const express = require('express');
 const pool = require('./database');
-const cors = require('cors')
-
+const cors = require('cors');
 
 const port = process.env.PORT || 3000;
 const app = express();
 
-
-
 app.use(cors({ origin: 'http://localhost:8080', credentials: true }));
 app.use(express.json());
 
-
-app.get('/api/routes', async(req, res) => {
+// Endpoint to fetch time slots for a specific date
+app.get('/api/timeslots', async (req, res) => {
     try {
-        console.log("A get all request has arrived");
-        const routes = await pool.query(
-            "SELECT * FROM routes ORDER BY id"
+        const { date } = req.query; // Get the date from the query parameters
+        const timeSlots = await pool.query(
+            "SELECT * FROM time_slots WHERE date = $1 ORDER BY time_slot",
+            [date]
         );
-        res.json(routes.rows);
+        res.json(timeSlots.rows); // Return the time slots for the selected date
     } catch (err) {
-        console.error(err.message);
+        console.error('Error fetching time slots:', err);
+        res.status(500).send('Server error');
     }
 });
 
-//ISETEHTUD FROM CITY PARAM
-app.get('/api/routes/from/:fromcity', async(req, res) => {
+// Endpoint to book a time slot
+app.post('/api/bookings', async (req, res) => {
     try {
-        console.log("A get all request has arrived");
-        const {fromcity} = req.params;
-        const routes = await pool.query(
-            "SELECT * FROM routes WHERE fromcity = $1", [fromcity]
-            
-        );
-        res.json(routes.rows);
-    } catch (err) {
-        console.error(err.message);
-    }
-});
+        const { date, time } = req.body; // Get the date and time from the request body
 
-
-app.get('/api/routes/:id', async(req, res) => {
-    try {
-        console.log("get a post with route parameter request has arrived");
-        const { id } = req.params;
-        const posts = await pool.query(
-            "SELECT * FROM routes WHERE fromcity = $1", [id]
-        );
-        res.json(posts.rows);
-    } catch (err) {
-        console.error(err.message);
-    }
-});
-
-app.post('/api/routes', async(req, res) => {
-    try {
-        console.log("A post request has arrived");
-        const route = req.body;
-        const newpost = await pool.query(
-            "INSERT INTO routes (fromcity, tocity, cost, departuretime, departuredate) values ($1, $2, $3, $4, $5)    RETURNING*", [route.fromcity, route.tocity, route.cost, route.departuretime, route.departuredate]
-        );
-        res.json(newpost);
-    } catch (err) {
-        console.error(err.message);
-    }
-});
-
-app.put('/api/routes/:id', async(req, res) => {
-    try {
-        const { id } = req.params;
-        const route = req.body;
-        console.log("An update request has arrived");
-        const updateroute = await pool.query(
-            "UPDATE routes SET (id, fromcity, tocity, cost, departuretime, departuredate) = ($1, $2, $3, $4, $5, $6) WHERE id = $1 RETURNING*", [id, route.fromcity, route.tocity, route.cost, route.departuretime, route.departuredate]
-        );
-        res.json(updateroute);
-    } catch (err) {
-        console.error(err.message);
-    }
-});
-//ONLY THE TIME AND DATE
-/* 
-app.put('/api/routes/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { departuretime, departuredate } = req.body;
-        console.log("An update request for departure time and date has arrived");
-
-        const updateroute = await pool.query(
-            "UPDATE routes SET departuretime = $2, departuredate = $3 WHERE id = $1 RETURNING *", 
-            [id, departuretime, departuredate]
+        // Check if the slot is already booked
+        const slot = await pool.query(
+            "SELECT * FROM time_slots WHERE date = $1 AND time_slot = $2",
+            [date, time]
         );
 
-        res.json(updateroute.rows[0]);
-    } catch (err) {
-        console.error(err.message);
-    }
-});
+        if (slot.rows.length === 0) {
+            return res.status(404).send('Time slot not found');
+        }
 
-*/
+        if (slot.rows[0].is_booked) {
+            return res.status(400).send('This slot is already booked');
+        }
 
-app.delete('/api/routes/:id', async(req, res) => {
-    try {
-        const { id } = req.params;
-        console.log(" A delete  request has arrived");
-        const deletepost = await pool.query(
-            "DELETE FROM routes WHERE id = $1 RETURNING*", [id]
+        // Update the slot status to 'booked'
+        await pool.query(
+            "UPDATE time_slots SET is_booked = true WHERE date = $1 AND time_slot = $2",
+            [date, time]
         );
-        res.json(deletepost);
+
+        res.status(200).send(`Slot booked for ${date} at ${time}`);
     } catch (err) {
-        console.error(err.message);
+        console.error('Error booking time slot:', err);
+        res.status(500).send('Server error');
     }
 });
-/*
-chatgpt delete all
-app.delete('/api/routes', async (req, res) => {
+
+// Add this to your existing server code (in the backend)
+
+app.post('/api/timeslots', async (req, res) => {
     try {
-        console.log("A delete all request has arrived");
+        const { date, time } = req.body; // Get the date and time from the request body
 
-        // Perform the delete query to remove all rows in the 'routes' table
-        const deleteAll = await pool.query("DELETE FROM routes");
+        // Check if the slot already exists
+        const existingSlot = await pool.query(
+            "SELECT * FROM time_slots WHERE date = $1 AND time_slot = $2",
+            [date, time]
+        );
 
-        // Send a response indicating success
-        res.json({ message: "All routes have been deleted" });
+        if (existingSlot.rows.length > 0) {
+            return res.status(400).send('Time slot already exists.');
+        }
+
+        // Insert the new time slot into the database
+        await pool.query(
+            "INSERT INTO time_slots (date, time_slot, is_booked) VALUES ($1, $2, false)",
+            [date, time]
+        );
+
+        res.status(200).send(`Time slot for ${date} at ${time} added successfully.`);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).json({ error: "An error occurred while deleting the routes" });
+        console.error('Error adding time slot:', err);
+        res.status(500).send('Server error');
     }
 });
-*/
-
 
 app.listen(port, () => {
-    console.log("Server is listening to port " + port)
+    console.log("Server is listening to port " + port);
 });
